@@ -1,3 +1,5 @@
+// +build freebsd
+
 package isowrap
 
 import (
@@ -8,23 +10,25 @@ import (
 	"time"
 )
 
-type JailsRunner struct {
+// BoxRunner is a Runner based on jail
+type BoxRunner struct {
 	B *Box
 }
 
-func (jb *JailsRunner) rctl(flag, rule string) error {
+func (br *BoxRunner) rctl(flag, rule string) error {
 	params := []string{}
 	params = append(
 		params,
 		flag,
-		fmt.Sprintf("jail:isowrap%d:%s/jail", jb.B.ID, rule),
+		fmt.Sprintf("jail:isowrap%d:%s/jail", br.B.ID, rule),
 	)
 	_, _, _, err := Exec("rctl", params...)
 	return err
 }
 
-func (jb *JailsRunner) Init() error {
-	p := filepath.Join(os.TempDir(), fmt.Sprintf("isowrap%d", jb.B.ID))
+// Init creates the jail and sets the rctl's
+func (br *BoxRunner) Init() error {
+	p := filepath.Join(os.TempDir(), fmt.Sprintf("isowrap%d", br.B.ID))
 	err := os.Mkdir(p, os.ModePerm)
 	if err != nil {
 		return err
@@ -35,7 +39,7 @@ func (jb *JailsRunner) Init() error {
 	params = append(
 		params,
 		"-c",
-		fmt.Sprintf("name=isowrap%d", jb.B.ID),
+		fmt.Sprintf("name=isowrap%d", br.B.ID),
 		"path="+p,
 		"persist",
 	)
@@ -48,27 +52,28 @@ func (jb *JailsRunner) Init() error {
 		if err != nil {
 			return
 		}
-		err = jb.rctl("-a", rule)
+		err = br.rctl("-a", rule)
 	}
 	// Set resource limits
-	if jb.B.Config.MemoryLimit > 0 {
-		cl(fmt.Sprintf("memoryuse:sigsegv=%dK", jb.B.Config.MemoryLimit))
+	if br.B.Config.MemoryLimit > 0 {
+		cl(fmt.Sprintf("memoryuse:sigsegv=%dK", br.B.Config.MemoryLimit))
 	}
 	if err != nil {
 		return err
 	}
 
-	jb.B.Path = p
+	br.B.Path = p
 	return nil
 }
 
-func (jb *JailsRunner) Run(command string) (result RunResult, err error) {
+// Run executes jexec to execute the given command.
+func (br *BoxRunner) Run(command string) (result RunResult, err error) {
 	params := []string{}
 	params = append(
 		params,
-		fmt.Sprintf("%fs", jb.B.Config.WallTime),
+		fmt.Sprintf("%fs", br.B.Config.WallTime),
 		"jexec",
-		fmt.Sprintf("isowrap%d", jb.B.ID),
+		fmt.Sprintf("isowrap%d", br.B.ID),
 		"/"+command,
 	)
 
@@ -105,15 +110,16 @@ func (jb *JailsRunner) Run(command string) (result RunResult, err error) {
 	return
 }
 
-func (jb *JailsRunner) Cleanup() error {
+// Cleanup deletes the jail and its directory.
+func (br *BoxRunner) Cleanup() error {
 	// stop jail
 	params := []string{}
 	params = append(
 		params,
 		"-r",
-		fmt.Sprintf("isowrap%d", jb.B.ID),
+		fmt.Sprintf("isowrap%d", br.B.ID),
 	)
-	_, _, _, err := Exec("rctl", "-r", fmt.Sprintf("jail:isowrap%d", jb.B.ID))
+	_, _, _, err := Exec("rctl", "-r", fmt.Sprintf("jail:isowrap%d", br.B.ID))
 	if err != nil {
 		return err
 	}
@@ -121,7 +127,7 @@ func (jb *JailsRunner) Cleanup() error {
 	if err != nil {
 		return err
 	}
-	err = os.RemoveAll(jb.B.Path)
+	err = os.RemoveAll(br.B.Path)
 	if err != nil {
 		return err
 	}

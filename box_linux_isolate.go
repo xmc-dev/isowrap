@@ -1,3 +1,5 @@
+// +build linux
+
 package isowrap
 
 import (
@@ -10,8 +12,8 @@ import (
 	"strings"
 )
 
-// IsolateRunner is a Runner based in isolate (See README)
-type IsolateRunner struct {
+// BoxRunner is a Runner based on isolate (See README)
+type BoxRunner struct {
 	B *Box
 }
 
@@ -48,12 +50,12 @@ func parseMetaFile(fp string) (map[string]string, error) {
 }
 
 // Init creates a new isolate box with control group support
-func (ib *IsolateRunner) Init() error {
+func (br *BoxRunner) Init() error {
 	params := []string{}
 	params = append(
 		params,
 		"--cg",
-		"--box-id="+strconv.Itoa(int(ib.B.ID)),
+		"--box-id="+strconv.Itoa(int(br.B.ID)),
 		"--init",
 	)
 	stdout, _, _, err := Exec("isolate", params...)
@@ -61,12 +63,12 @@ func (ib *IsolateRunner) Init() error {
 		return err
 	}
 
-	ib.B.Path = strings.TrimSpace(string(stdout)) + "/box"
+	br.B.Path = strings.TrimSpace(string(stdout)) + "/box"
 	return nil
 }
 
 // Run runs the specified command inside the isolated box
-func (ib *IsolateRunner) Run(command string) (result RunResult, err error) {
+func (br *BoxRunner) Run(command string) (result RunResult, err error) {
 	itoa := func(i uint) string {
 		return strconv.Itoa(int(i))
 	}
@@ -96,22 +98,22 @@ func (ib *IsolateRunner) Run(command string) (result RunResult, err error) {
 		}
 	}
 
-	params = append(params, "--box-id="+itoa(ib.B.ID))
-	apf("--time", ib.B.Config.CPUTime)
-	apf("--wall-time", ib.B.Config.WallTime)
-	ap("--stack", ib.B.Config.StackLimit)
+	params = append(params, "--box-id="+itoa(br.B.ID))
+	apf("--time", br.B.Config.CPUTime)
+	apf("--wall-time", br.B.Config.WallTime)
+	ap("--stack", br.B.Config.StackLimit)
 
-	if ib.B.Config.MaxProc == 0 {
+	if br.B.Config.MaxProc == 0 {
 		params = append(params, "-p")
 	} else {
-		params = append(params, "--processes="+itoa(ib.B.Config.MaxProc))
+		params = append(params, "--processes="+itoa(br.B.Config.MaxProc))
 	}
 
-	if ib.B.Config.ShareNetwork {
+	if br.B.Config.ShareNetwork {
 		params = append(params, "--share-net")
 	}
 
-	for _, e := range ib.B.Config.Env {
+	for _, e := range br.B.Config.Env {
 		if e.Value == "" {
 			params = append(params, "--env="+e.Var)
 		} else {
@@ -156,8 +158,8 @@ func (ib *IsolateRunner) Run(command string) (result RunResult, err error) {
 }
 
 // Cleanup cleans up the isolate box
-func (ib *IsolateRunner) Cleanup() error {
-	_, err := exec.Command("isolate", "--cg", "--box-id="+strconv.Itoa(int(ib.B.ID)), "--cleanup").Output()
+func (br *BoxRunner) Cleanup() error {
+	_, err := exec.Command("isolate", "--cg", "--box-id="+strconv.Itoa(int(br.B.ID)), "--cleanup").Output()
 	if err != nil {
 		return err
 	}

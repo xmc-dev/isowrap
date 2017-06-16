@@ -1,7 +1,5 @@
 package isowrap
 
-import "runtime"
-
 // EnvPair represents an environment variable made of a key and a value.
 type EnvPair struct {
 	Var   string
@@ -101,15 +99,7 @@ func DefaultBoxConfig() BoxConfig {
 func NewBox() *Box {
 	b := Box{}
 	b.Config = DefaultBoxConfig()
-	switch runtime.GOOS {
-	case "linux":
-		b.runner = &IsolateRunner{&b}
-	case "freebsd":
-		b.runner = &JailsRunner{&b}
-	default:
-		// XXX: replace with error
-		panic("Unsupported OS")
-	}
+	b.runner = &BoxRunner{&b}
 
 	return &b
 }

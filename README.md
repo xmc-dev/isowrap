@@ -8,8 +8,8 @@ This is probably alpha quality software.
 
 ## To do:
 
-- [ ] FreeBSD jail runner
-- [ ] CLI
+- [x] FreeBSD jail runner
+  - [ ] Implement "proper" wall time limit.
 
 ## Platform specific requirements
 
