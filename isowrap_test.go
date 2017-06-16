@@ -141,7 +141,7 @@ func TestFailTimeLimit(t *testing.T) {
 		t.Fatal("Couldn't get working directory: ", err)
 	}
 	cfg := BoxConfig{}
-	cfg.WallTime = 1
+	cfg.WallTime = 0.3
 	b := initBox(0, cfg, t)
 	copyTest(
 		filepath.Join(wd, testDataDir, "fail_time_limit"),
@@ -154,5 +154,8 @@ func TestFailTimeLimit(t *testing.T) {
 
 	if err != nil {
 		t.Fatal("Couldn't run test program: ", err)
+	}
+	if !(result.WallTime >= cfg.WallTime && result.WallTime <= cfg.WallTime+0.05) {
+		t.Error("Time limit not achieved")
 	}
 }

@@ -54,12 +54,6 @@ func (jb *JailsRunner) Init() error {
 	if jb.B.Config.MemoryLimit > 0 {
 		cl(fmt.Sprintf("memoryuse:sigsegv=%dK", jb.B.Config.MemoryLimit))
 	}
-	//if jb.B.Config.CPUTime > 0 {
-	//	cl(fmt.Sprintf("cputime:sigsegv=%d", int(jb.B.Config.CPUTime)))
-	//}
-	//if jb.B.Config.WallTime > 0 {
-	//	cl(fmt.Sprintf("wallclock:sigsegv=%d", int(jb.B.Config.WallTime)))
-	//}
 	if err != nil {
 		return err
 	}
@@ -72,12 +66,15 @@ func (jb *JailsRunner) Run(command string) (result RunResult, err error) {
 	params := []string{}
 	params = append(
 		params,
+		fmt.Sprintf("%fs", jb.B.Config.WallTime),
+		"jexec",
 		fmt.Sprintf("isowrap%d", jb.B.ID),
 		"/"+command,
 	)
 
 	result.ErrorType = NoError
-	stdout, stderr, r, err := Exec("jexec", params...)
+	// Using timeout to limit wall time is a pretty dirty hack but such is life...
+	stdout, stderr, r, err := Exec("timeout", params...)
 	state := r.State
 	result.Stdout = stdout
 	result.Stderr = stderr
