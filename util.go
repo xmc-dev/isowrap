@@ -33,5 +33,7 @@ func Exec(program string, args ...string) (stdout string, stderr string, result 
 	result.State = cmd.ProcessState
 	result.WallTime = elapsed
 
+	stdout = string(bout.Bytes())
+	stderr = string(berr.Bytes())
 	return
 }
