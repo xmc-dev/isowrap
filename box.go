@@ -1,5 +1,7 @@
 package isowrap
 
+import "runtime"
+
 // EnvPair represents an environment variable made of a key and a value.
 type EnvPair struct {
 	Var   string
@@ -23,8 +25,8 @@ type RunResult struct {
 
 // BoxConfig contains configuration data for the BoxRunner
 type BoxConfig struct {
-	CPUTime      uint
-	WallTime     uint
+	CPUTime      float64
+	WallTime     float64
 	MemoryLimit  uint
 	StackLimit   uint
 	MaxProc      uint
@@ -42,7 +44,7 @@ type Runner interface {
 
 const (
 	// NoError means that no error has been returned by the box runner
-	NoError = iota
+	NoError BoxError = iota
 
 	// RunTimeError means that an error was rised at run time. Probably non-zero status.
 	RunTimeError = iota
@@ -99,7 +101,15 @@ func DefaultBoxConfig() BoxConfig {
 func NewBox() *Box {
 	b := Box{}
 	b.Config = DefaultBoxConfig()
-	b.runner = &IsolateRunner{&b}
+	switch runtime.GOOS {
+	case "linux":
+		b.runner = &IsolateRunner{&b}
+	case "freebsd":
+		b.runner = &JailsRunner{&b}
+	default:
+		// XXX: replace with error
+		panic("Unsupported OS")
+	}
 
 	return &b
 }

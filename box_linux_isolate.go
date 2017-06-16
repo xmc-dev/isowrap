@@ -90,9 +90,15 @@ func (ib *IsolateRunner) Run(command string) (result RunResult, err error) {
 		}
 	}
 
+	apf := func(p string, i float64) {
+		if i > 0 {
+			params = append(params, p+"="+strconv.FormatFloat(i, 'f', -1, 64))
+		}
+	}
+
 	params = append(params, "--box-id="+itoa(ib.B.ID))
-	ap("--time", ib.B.Config.CPUTime)
-	ap("--wall-time", ib.B.Config.WallTime)
+	apf("--time", ib.B.Config.CPUTime)
+	apf("--wall-time", ib.B.Config.WallTime)
 	ap("--stack", ib.B.Config.StackLimit)
 
 	if ib.B.Config.MaxProc == 0 {

@@ -2,12 +2,20 @@ package isowrap
 
 import (
 	"io/ioutil"
+	"log"
+	"os"
+	"path/filepath"
+	"strings"
 	"testing"
 )
 
-func initBox(id uint, t *testing.T) *Box {
+const testSrcDir = "test_src"
+const testDataDir = "test_data"
+
+func initBox(id uint, cfg BoxConfig, t *testing.T) *Box {
 	b := NewBox()
 	b.ID = id
+	b.Config = cfg
 	err := b.Init()
 
 	if err != nil {
@@ -25,15 +33,70 @@ func cleanupBox(b *Box, t *testing.T) {
 	}
 }
 
+func copyTest(from, to string) error {
+	data, err := ioutil.ReadFile(from)
+	if err != nil {
+		return err
+	}
+
+	err = ioutil.WriteFile(to, data, 0777)
+	return err
+}
+
+func compileTestData() error {
+	wd, err := os.Getwd()
+	if err != nil {
+		return err
+	}
+	walk := func(path string, f os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+		if f.IsDir() {
+			return nil
+		}
+
+		if filepath.Ext(path) == ".go" {
+			bn := strings.TrimSuffix(filepath.Base(path), ".go")
+			log.Println("Compiling " + filepath.Base(path))
+			_, _, _, err := Exec(
+				"go",
+				"build",
+				"-o",
+				filepath.Join(wd, testDataDir, bn),
+				path,
+			)
+			if err != nil {
+				return err
+			}
+		}
+		return nil
+	}
+	err = filepath.Walk(filepath.Join(wd, testSrcDir), walk)
+	return err
+}
+
+func TestMain(m *testing.M) {
+	log.Println("Compiling test programs")
+	compileTestData()
+	os.Exit(m.Run())
+}
+
 func TestInitAndCleanupBox(t *testing.T) {
-	b := initBox(42, t)
+	b := initBox(42, BoxConfig{}, t)
 	cleanupBox(b, t)
 }
 
 func TestSuccessfulRunNoLimits(t *testing.T) {
-	b := initBox(0, t)
-	testProgram := []byte("#!/bin/sh\necho test")
-	err := ioutil.WriteFile(b.Path+"/testProgram", testProgram, 0777)
+	wd, err := os.Getwd()
+	if err != nil {
+		t.Fatal("Couldn't get workding directory: ", err)
+	}
+	b := initBox(0, BoxConfig{}, t)
+	copyTest(
+		filepath.Join(wd, testDataDir, "success_no_limits"),
+		filepath.Join(b.Path, "testProgram"),
+	)
 
 	if err != nil {
 		t.Error("Couldn't create test program: ", err)
@@ -41,25 +104,27 @@ func TestSuccessfulRunNoLimits(t *testing.T) {
 
 	result, err := b.Run("testProgram")
 	t.Logf("Result: %+v", result)
+	cleanupBox(b, t)
 
 	if err != nil {
 		t.Fatal("Couldn't run test program: ", err)
 	}
-
-	cleanupBox(b, t)
 }
 
 func TestFailRunNoLimits(t *testing.T) {
-	b := initBox(0, t)
-	testProgram := []byte("#!/bin/sh\na=0\necho $((2/a))")
-	err := ioutil.WriteFile(b.Path+"/testProgram", testProgram, 0777)
-
+	wd, err := os.Getwd()
 	if err != nil {
-		t.Error("Couldn't create test program: ", err)
+		t.Fatal("Couldn't get working directory: ", err)
 	}
+	b := initBox(0, BoxConfig{}, t)
+	copyTest(
+		filepath.Join(wd, testDataDir, "fail_no_limits"),
+		filepath.Join(b.Path, "testProgram"),
+	)
 
 	result, err := b.Run("testProgram")
 	t.Logf("Result: %+v", result)
+	cleanupBox(b, t)
 
 	if err != nil {
 		t.Fatal("Couldn't run test program: ", err)
@@ -68,6 +133,26 @@ func TestFailRunNoLimits(t *testing.T) {
 	if result.ExitCode == 0 {
 		t.Fatal("Program probably ran successfully")
 	}
+}
 
+func TestFailTimeLimit(t *testing.T) {
+	wd, err := os.Getwd()
+	if err != nil {
+		t.Fatal("Couldn't get working directory: ", err)
+	}
+	cfg := BoxConfig{}
+	cfg.WallTime = 1
+	b := initBox(0, cfg, t)
+	copyTest(
+		filepath.Join(wd, testDataDir, "fail_time_limit"),
+		filepath.Join(b.Path, "testProgram"),
+	)
+
+	result, err := b.Run("testProgram")
+	t.Logf("Result: %+v", result)
 	cleanupBox(b, t)
+
+	if err != nil {
+		t.Fatal("Couldn't run test program: ", err)
+	}
 }
