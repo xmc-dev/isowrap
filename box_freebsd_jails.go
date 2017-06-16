@@ -90,6 +90,11 @@ func (jb *JailsRunner) Run(command string) (result RunResult, err error) {
 		return
 	}
 	result.ExitCode = ws.ExitStatus()
+	if result.ExitCode == 124 {
+		result.ErrorType = Timeout
+	} else if result.ExitCode != 0 {
+		result.ErrorType = RunTimeError
+	}
 	result.CPUTime = float64(state.SystemTime()+state.UserTime()) / float64(time.Second)
 	result.MemUsed = uint(us.Maxrss)
 	result.WallTime = float64(r.WallTime) / float64(time.Second)

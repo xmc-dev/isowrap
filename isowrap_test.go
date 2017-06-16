@@ -155,7 +155,7 @@ func TestFailTimeLimit(t *testing.T) {
 	if err != nil {
 		t.Fatal("Couldn't run test program: ", err)
 	}
-	if !(result.WallTime >= cfg.WallTime && result.WallTime <= cfg.WallTime+0.05) {
-		t.Error("Time limit not achieved")
+	if result.ErrorType != Timeout {
+		t.Error("Program didn't exit because of timeout")
 	}
 }
