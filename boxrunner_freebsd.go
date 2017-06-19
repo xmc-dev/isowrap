@@ -1,10 +1,10 @@
-// +build freebsd
-
 package isowrap
 
 import (
+	"bytes"
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"syscall"
 	"time"
@@ -68,43 +68,93 @@ func (br *BoxRunner) Init() error {
 
 // Run executes jexec to execute the given command.
 func (br *BoxRunner) Run(command string) (result RunResult, err error) {
+	var bout, berr bytes.Buffer
+
 	params := []string{}
 	params = append(
 		params,
-		fmt.Sprintf("%fs", br.B.Config.WallTime),
-		"jexec",
 		fmt.Sprintf("isowrap%d", br.B.ID),
 		"/"+command,
 	)
 
 	result.ErrorType = NoError
-	// Using timeout to limit wall time is a pretty dirty hack but such is life...
-	stdout, stderr, r, err := Exec("timeout", params...)
-	state := r.State
-	result.Stdout = stdout
-	result.Stderr = stderr
 
-	ws, ok := state.Sys().(syscall.WaitStatus)
-	if !ok {
-		result.ErrorType = InternalError
-		return
-	}
-	us, ok := state.SysUsage().(*syscall.Rusage)
-	if !ok {
-		result.ErrorType = InternalError
-		return
-	}
-	result.ExitCode = ws.ExitStatus()
-	if result.ExitCode == 124 {
-		result.ErrorType = Timeout
-	} else if result.ExitCode != 0 {
-		result.ErrorType = RunTimeError
-	}
-	result.CPUTime = float64(state.SystemTime()+state.UserTime()) / float64(time.Second)
-	result.MemUsed = uint(us.Maxrss)
-	result.WallTime = float64(r.WallTime) / float64(time.Second)
+	cmd := exec.Command("jexec", params...)
+	cmd.Stdout = &bout
+	cmd.Stderr = &berr
+
+	startTime := time.Now()
+	err = cmd.Start()
 	if err != nil {
 		return
+	}
+	proc := cmd.Process
+	isDone := false
+
+	done := make(chan error, 1)
+	waitForProc := func() {
+		done <- cmd.Wait()
+	}
+	doneProcess := func() {
+		if _, ok := err.(*exec.ExitError); !ok {
+			return
+		} else {
+			err = nil
+		}
+		isDone = true
+	}
+
+	if br.B.Config.WallTime > 0 {
+		go waitForProc()
+
+		select {
+		case <-time.After(time.Duration(br.B.Config.WallTime * float64(time.Second))):
+			if !isDone {
+				if err = proc.Kill(); err != nil {
+					return
+				}
+				result.ErrorType = Timeout
+			}
+		case err = <-done:
+			doneProcess()
+		}
+	} else {
+		waitForProc()
+		doneProcess()
+	}
+	cmd.Wait()
+	wallTime := time.Since(startTime)
+	result.WallTime = float64(wallTime) / float64(time.Second)
+
+	result.Stdout = string(bout.Bytes())
+	result.Stderr = string(berr.Bytes())
+
+	if result.ErrorType != NoError {
+		return
+	}
+
+	state := cmd.ProcessState
+
+	// state is nil if the process was killed
+	if state != nil {
+		ws, ok := state.Sys().(syscall.WaitStatus)
+		if !ok {
+			result.ErrorType = InternalError
+			return
+		}
+
+		us, ok := state.SysUsage().(*syscall.Rusage)
+		if !ok {
+			result.ErrorType = InternalError
+			return
+		}
+		result.ExitCode = ws.ExitStatus()
+		result.CPUTime = float64(state.SystemTime()+state.UserTime()) / float64(time.Second)
+		result.MemUsed = uint(us.Maxrss)
+	}
+
+	if result.ExitCode != 0 {
+		result.ErrorType = RunTimeError
 	}
 
 	return

@@ -159,3 +159,27 @@ func TestFailTimeLimit(t *testing.T) {
 		t.Error("Program didn't exit because of timeout")
 	}
 }
+
+func TestFailSigsegv(t *testing.T) {
+	wd, err := os.Getwd()
+	if err != nil {
+		t.Fatal("Couldn't get working directory: ", err)
+	}
+	cfg := BoxConfig{}
+	b := initBox(0, cfg, t)
+	copyTest(
+		filepath.Join(wd, testDataDir, "fail_sigsegv"),
+		filepath.Join(b.Path, "testProgram"),
+	)
+
+	result, err := b.Run("testProgram")
+	t.Logf("Result: %+v", result)
+	cleanupBox(b, t)
+
+	if err != nil {
+		t.Fatal("Couldn't run test program: ", err)
+	}
+	if result.ErrorType != RunTimeError {
+		t.Error("Program didn't exit because of runtime error")
+	}
+}

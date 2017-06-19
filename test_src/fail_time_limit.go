@@ -3,5 +3,5 @@ package main
 import "time"
 
 func main() {
-	time.Sleep(100 * time.Second)
+	time.Sleep(2 * time.Second)
 }
