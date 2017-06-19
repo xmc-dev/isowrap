@@ -182,7 +182,7 @@ func TestFailSigsegv(t *testing.T) {
 	if err != nil {
 		t.Fatal("Couldn't run test program: ", err)
 	}
-	if result.ErrorType != RunTimeError {
+	if result.ErrorType != KilledBySignal {
 		t.Error("Program didn't exit because of runtime error")
 	}
 }
