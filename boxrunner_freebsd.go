@@ -149,6 +149,10 @@ func (br *BoxRunner) Run(command string) (result RunResult, err error) {
 			return
 		}
 		result.ExitCode = ws.ExitStatus()
+		// Return code by convention
+		if ws.Signaled() {
+			result.ExitCode = 128 + int(ws.Signal())
+		}
 		result.CPUTime = float64(state.SystemTime()+state.UserTime()) / float64(time.Second)
 		result.MemUsed = uint(us.Maxrss)
 	}

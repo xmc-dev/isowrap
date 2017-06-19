@@ -56,14 +56,14 @@ func compileTestData() error {
 			return nil
 		}
 
-		if filepath.Ext(path) == ".go" {
-			bn := strings.TrimSuffix(filepath.Base(path), ".go")
+		if filepath.Ext(path) == ".c" {
+			bn := strings.TrimSuffix(filepath.Base(path), ".c")
 			log.Println("Compiling " + filepath.Base(path))
 			_, _, _, err := Exec(
-				"go",
-				"build",
+				"cc",
 				"-o",
 				filepath.Join(wd, testDataDir, bn),
+				"-static",
 				path,
 			)
 			if err != nil {
@@ -78,7 +78,10 @@ func compileTestData() error {
 
 func TestMain(m *testing.M) {
 	log.Println("Compiling test programs")
-	compileTestData()
+	err := compileTestData()
+	if err != nil {
+		log.Fatal("Couldn't compile test data: ", err)
+	}
 	os.Exit(m.Run())
 }
 
