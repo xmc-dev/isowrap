@@ -29,7 +29,7 @@ func (br *BoxRunner) rctl(flag, rule string) error {
 // Init creates the jail and sets the rctl's
 func (br *BoxRunner) Init() error {
 	p := filepath.Join(os.TempDir(), fmt.Sprintf("isowrap%d", br.B.ID))
-	err := os.Mkdir(p, os.ModePerm)
+	err := os.MkdirAll(filepath.Join(p, "root"), os.ModePerm)
 	if err != nil {
 		return err
 	}
@@ -58,6 +58,12 @@ func (br *BoxRunner) Init() error {
 	if br.B.Config.MemoryLimit > 0 {
 		cl(fmt.Sprintf("memoryuse:sigsegv=%dK", br.B.Config.MemoryLimit))
 	}
+	if br.B.Config.StackLimit > 0 {
+		cl(fmt.Sprintf("stacksize:sigsegv=%dK", br.B.Config.MemoryLimit))
+	}
+	if br.B.Config.MaxProc > 0 {
+		cl(fmt.Sprintf("maxproc:sigsegv=%d", br.B.Config.MaxProc))
+	}
 	if err != nil {
 		return err
 	}
@@ -82,6 +88,19 @@ func (br *BoxRunner) Run(command string) (result RunResult, err error) {
 	cmd := exec.Command("jexec", params...)
 	cmd.Stdout = &bout
 	cmd.Stderr = &berr
+	if br.B.Config.FullEnv {
+		copy(cmd.Env, os.Environ())
+	} else {
+		cmd.Env = []string{}
+	}
+	for _, e := range br.B.Config.Env {
+		// If no value given, inherit environment variable from the system
+		if e.Value == "" {
+			cmd.Env = append(cmd.Env, e.Var+"="+os.Getenv(e.Var))
+		} else {
+			cmd.Env = append(cmd.Env, e.Var+"="+e.Value)
+		}
+	}
 
 	startTime := time.Now()
 	err = cmd.Start()

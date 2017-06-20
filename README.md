@@ -8,12 +8,14 @@ This is probably alpha quality software.
 
 ## To do:
 
-- [ ] FreeBSD jail runner
+- [x] Linux isolate runner
+  - [ ] Full env
+- [x] FreeBSD jail runner
   - [x] Implement "proper" wall time limit.
-  - [ ] Stack limit
-  - [ ] Maximum number of processes
+  - [x] Stack limit
+  - [x] Maximum number of processes
   - [ ] Enable/Disable networking
-  - [ ] Environment variables
+  - [x] Environment variables
 
 ## Platform specific requirements
 
