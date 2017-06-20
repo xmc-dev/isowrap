@@ -1,5 +1,7 @@
 package isowrap
 
+import "time"
+
 // EnvPair represents an environment variable made of a key and a value.
 type EnvPair struct {
 	Var   string
@@ -15,16 +17,16 @@ type RunResult struct {
 	Stderr   string
 	ExitCode int
 
-	CPUTime   float64
-	WallTime  float64
+	CPUTime   time.Duration
+	WallTime  time.Duration
 	MemUsed   uint
 	ErrorType BoxError
 }
 
 // BoxConfig contains configuration data for the BoxRunner
 type BoxConfig struct {
-	CPUTime      float64
-	WallTime     float64
+	CPUTime      time.Duration
+	WallTime     time.Duration
 	MemoryLimit  uint
 	StackLimit   uint
 	MaxProc      uint

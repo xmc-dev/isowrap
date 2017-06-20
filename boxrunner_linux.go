@@ -8,6 +8,7 @@ import (
 	"os/exec"
 	"strconv"
 	"strings"
+	"time"
 )
 
 // BoxRunner is a Runner based on isolate (See README)
@@ -97,8 +98,8 @@ func (br *BoxRunner) Run(command string) (result RunResult, err error) {
 	}
 
 	params = append(params, "--box-id="+itoa(br.B.ID))
-	apf("--time", br.B.Config.CPUTime)
-	apf("--wall-time", br.B.Config.WallTime)
+	apf("--time", br.B.Config.CPUTime.Seconds())
+	apf("--wall-time", br.B.Config.WallTime.Seconds())
 	ap("--stack", br.B.Config.StackLimit)
 
 	if br.B.Config.MaxProc == 0 {
@@ -130,8 +131,11 @@ func (br *BoxRunner) Run(command string) (result RunResult, err error) {
 
 	// YOLO
 
-	result.CPUTime, _ = strconv.ParseFloat(meta["time"], 64)
-	result.WallTime, _ = strconv.ParseFloat(meta["time-wall"], 64)
+	cpuTime, _ := strconv.ParseFloat(meta["time"], 64)
+	wallTime, _ := strconv.ParseFloat(meta["time-wall"], 64)
+	result.CPUTime = time.Duration(cpuTime * float64(time.Second))
+	result.WallTime = time.Duration(wallTime * float64(time.Second))
+
 	memused, _ := strconv.ParseUint(meta["cg-mem"], 10, 64)
 	result.MemUsed = uint(memused)
 	if _, ok := meta["status"]; ok {

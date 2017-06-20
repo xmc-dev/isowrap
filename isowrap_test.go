@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 )
 
 const testSrcDir = "test_src"
@@ -144,7 +145,7 @@ func TestFailTimeLimit(t *testing.T) {
 		t.Fatal("Couldn't get working directory: ", err)
 	}
 	cfg := BoxConfig{}
-	cfg.WallTime = 0.3
+	cfg.WallTime = time.Duration(0.3 * float64(time.Second))
 	b := initBox(0, cfg, t)
 	copyTest(
 		filepath.Join(wd, testDataDir, "fail_time_limit"),

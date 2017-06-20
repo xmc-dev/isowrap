@@ -108,7 +108,7 @@ func (br *BoxRunner) Run(command string) (result RunResult, err error) {
 		go waitForProc()
 
 		select {
-		case <-time.After(time.Duration(br.B.Config.WallTime * float64(time.Second))):
+		case <-time.After(br.B.Config.WallTime):
 			if !isDone {
 				if err = proc.Kill(); err != nil {
 					return
@@ -124,7 +124,7 @@ func (br *BoxRunner) Run(command string) (result RunResult, err error) {
 	}
 	cmd.Wait()
 	wallTime := time.Since(startTime)
-	result.WallTime = float64(wallTime) / float64(time.Second)
+	result.WallTime = wallTime
 
 	result.Stdout = string(bout.Bytes())
 	result.Stderr = string(berr.Bytes())
@@ -154,7 +154,7 @@ func (br *BoxRunner) Run(command string) (result RunResult, err error) {
 			result.ExitCode = 128 + int(ws.Signal())
 			result.ErrorType = KilledBySignal
 		}
-		result.CPUTime = float64(state.SystemTime()+state.UserTime()) / float64(time.Second)
+		result.CPUTime = state.SystemTime() + state.UserTime()
 		result.MemUsed = uint(us.Maxrss)
 	}
 
