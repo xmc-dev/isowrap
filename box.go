@@ -38,7 +38,7 @@ type BoxConfig struct {
 // Runner is an interface for various program isolating methods
 type Runner interface {
 	Init() error
-	Run(string) (RunResult, error)
+	Run(command string, args ...string) (RunResult, error)
 	Cleanup() error
 }
 
@@ -112,8 +112,8 @@ func (b *Box) Init() error {
 }
 
 // Run calls the runner's Run function
-func (b *Box) Run(command string) (RunResult, error) {
-	return b.runner.Run(command)
+func (b *Box) Run(command string, args ...string) (RunResult, error) {
+	return b.runner.Run(command, args...)
 }
 
 // Cleanup calls the runner's Cleanup function.
