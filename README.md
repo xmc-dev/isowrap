@@ -9,7 +9,7 @@ This is probably alpha quality software.
 ## To do:
 
 - [x] Linux isolate runner
-  - [ ] Full env
+  - [x] Full env
 - [x] FreeBSD jail runner
   - [x] Implement "proper" wall time limit.
   - [x] Stack limit

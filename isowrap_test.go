@@ -34,14 +34,19 @@ func cleanupBox(b *Box, t *testing.T) {
 	}
 }
 
-func copyTest(from, to string) error {
+func copyTest(testProgram string, b *Box, t *testing.T) {
+	wd, err := os.Getwd()
+	if err != nil {
+		t.Fatal("Couldn't get working directory: ", err)
+	}
+	from := filepath.Join(wd, testDataDir, testProgram)
+	to := filepath.Join(b.Path, "testProgram")
 	data, err := ioutil.ReadFile(from)
 	if err != nil {
-		return err
+		t.Fatal("Couldn't copy test program '" + testProgram + "'")
 	}
 
 	err = ioutil.WriteFile(to, data, 0777)
-	return err
 }
 
 func compileTestData() error {
@@ -77,6 +82,15 @@ func compileTestData() error {
 	return err
 }
 
+func runTest(b *Box, t *testing.T) RunResult {
+	result, err := b.Run("testProgram")
+	t.Logf("Result: %+v", result)
+	if err != nil {
+		t.Fatal("Couldn't run test program: ", err)
+	}
+	return result
+}
+
 func TestMain(m *testing.M) {
 	log.Println("Compiling test programs")
 	err := compileTestData()
@@ -92,47 +106,19 @@ func TestInitAndCleanupBox(t *testing.T) {
 }
 
 func TestSuccessfulRunNoLimits(t *testing.T) {
-	wd, err := os.Getwd()
-	if err != nil {
-		t.Fatal("Couldn't get workding directory: ", err)
-	}
 	b := initBox(0, BoxConfig{}, t)
-	copyTest(
-		filepath.Join(wd, testDataDir, "success_no_limits"),
-		filepath.Join(b.Path, "testProgram"),
-	)
+	copyTest("success_no_limits", b, t)
 
-	if err != nil {
-		t.Error("Couldn't create test program: ", err)
-	}
-
-	result, err := b.Run("testProgram")
-	t.Logf("Result: %+v", result)
+	runTest(b, t)
 	cleanupBox(b, t)
-
-	if err != nil {
-		t.Fatal("Couldn't run test program: ", err)
-	}
 }
 
 func TestFailRunNoLimits(t *testing.T) {
-	wd, err := os.Getwd()
-	if err != nil {
-		t.Fatal("Couldn't get working directory: ", err)
-	}
 	b := initBox(0, BoxConfig{}, t)
-	copyTest(
-		filepath.Join(wd, testDataDir, "fail_no_limits"),
-		filepath.Join(b.Path, "testProgram"),
-	)
+	copyTest("fail_no_limits", b, t)
 
-	result, err := b.Run("testProgram")
-	t.Logf("Result: %+v", result)
+	result := runTest(b, t)
 	cleanupBox(b, t)
-
-	if err != nil {
-		t.Fatal("Couldn't run test program: ", err)
-	}
 
 	if result.ExitCode == 0 {
 		t.Fatal("Program probably ran successfully")
@@ -140,50 +126,78 @@ func TestFailRunNoLimits(t *testing.T) {
 }
 
 func TestFailTimeLimit(t *testing.T) {
-	wd, err := os.Getwd()
-	if err != nil {
-		t.Fatal("Couldn't get working directory: ", err)
-	}
 	cfg := BoxConfig{}
 	cfg.WallTime = time.Duration(0.3 * float64(time.Second))
 	b := initBox(0, cfg, t)
-	copyTest(
-		filepath.Join(wd, testDataDir, "fail_time_limit"),
-		filepath.Join(b.Path, "testProgram"),
-	)
+	copyTest("fail_time_limit", b, t)
 
-	result, err := b.Run("testProgram")
-	t.Logf("Result: %+v", result)
+	result := runTest(b, t)
 	cleanupBox(b, t)
 
-	if err != nil {
-		t.Fatal("Couldn't run test program: ", err)
-	}
 	if result.ErrorType != Timeout {
 		t.Error("Program didn't exit because of timeout")
 	}
 }
 
 func TestFailSigsegv(t *testing.T) {
-	wd, err := os.Getwd()
-	if err != nil {
-		t.Fatal("Couldn't get working directory: ", err)
-	}
 	cfg := BoxConfig{}
 	b := initBox(0, cfg, t)
-	copyTest(
-		filepath.Join(wd, testDataDir, "fail_sigsegv"),
-		filepath.Join(b.Path, "testProgram"),
-	)
+	copyTest("fail_sigsegv", b, t)
 
-	result, err := b.Run("testProgram")
-	t.Logf("Result: %+v", result)
+	result := runTest(b, t)
 	cleanupBox(b, t)
 
-	if err != nil {
-		t.Fatal("Couldn't run test program: ", err)
-	}
 	if result.ErrorType != KilledBySignal {
 		t.Error("Program didn't exit because of runtime error")
+	}
+}
+
+func TestEnvFull(t *testing.T) {
+	cfg := BoxConfig{}
+	cfg.FullEnv = true
+	b := initBox(0, cfg, t)
+	copyTest("env_test", b, t)
+
+	result := runTest(b, t)
+	if result.ErrorType != NoError {
+		t.Error("Program failed")
+	}
+	if strings.TrimSpace(result.Stdout) != os.Getenv("HOME") {
+		t.Error("Program returned the wrong value for the given environment variable")
+	}
+}
+
+func TestEnvInherit(t *testing.T) {
+	cfg := BoxConfig{}
+	os.Setenv("ISOWRAP_SPECIAL_VAL", "test432")
+	cfg.Env = append(cfg.Env, EnvPair{"ISOWRAP_SPECIAL_VAL", ""})
+	b := initBox(0, cfg, t)
+	copyTest("env_val", b, t)
+
+	result := runTest(b, t)
+	cleanupBox(b, t)
+
+	if result.ErrorType != NoError {
+		t.Error("Program failed")
+	}
+	if strings.TrimSpace(result.Stdout) != os.Getenv("ISOWRAP_SPECIAL_VAL") {
+		t.Error("Program returned the wrong value for the given environment variable")
+	}
+}
+
+func TestEnvValue(t *testing.T) {
+	cfg := BoxConfig{}
+	cfg.Env = append(cfg.Env, EnvPair{"ISOWRAP_SPECIAL_VAL", "test321"})
+	b := initBox(0, cfg, t)
+	copyTest("env_val", b, t)
+
+	result := runTest(b, t)
+	cleanupBox(b, t)
+
+	if result.ErrorType != NoError {
+		t.Error("Program failed")
+	}
+	if strings.TrimSpace(result.Stdout) != "test321" {
+		t.Error("Program returned the wrong value for the given environment variable")
 	}
 }

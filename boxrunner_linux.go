@@ -119,6 +119,9 @@ func (br *BoxRunner) Run(command string, args ...string) (result RunResult, err 
 			params = append(params, "--env="+e.Var+"="+e.Value)
 		}
 	}
+	if br.B.Config.FullEnv {
+		params = append(params, "--full-env")
+	}
 
 	params = append(params, "--cg", "--run", "--", command)
 	params = append(params, args...)
