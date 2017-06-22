@@ -67,7 +67,7 @@ func (br *BoxRunner) Init() error {
 }
 
 // Run executes jexec to execute the given command.
-func (br *BoxRunner) Run(command string) (result RunResult, err error) {
+func (br *BoxRunner) Run(command string, args ...string) (result RunResult, err error) {
 	var bout, berr bytes.Buffer
 
 	params := []string{}
@@ -76,6 +76,7 @@ func (br *BoxRunner) Run(command string) (result RunResult, err error) {
 		fmt.Sprintf("isowrap%d", br.B.ID),
 		"/"+command,
 	)
+	params = append(params, args...)
 
 	result.ErrorType = NoError
 

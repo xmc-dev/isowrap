@@ -67,7 +67,7 @@ func (br *BoxRunner) Init() error {
 }
 
 // Run runs the specified command inside the isolated box
-func (br *BoxRunner) Run(command string) (result RunResult, err error) {
+func (br *BoxRunner) Run(command string, args ...string) (result RunResult, err error) {
 	itoa := func(i uint) string {
 		return strconv.Itoa(int(i))
 	}
@@ -121,6 +121,7 @@ func (br *BoxRunner) Run(command string) (result RunResult, err error) {
 	}
 
 	params = append(params, "--cg", "--run", "--", command)
+	params = append(params, args...)
 	stdout, stderr, _, err := Exec("isolate", params...)
 	result.Stdout = stdout
 	result.Stderr = stderr
