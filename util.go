@@ -7,6 +7,7 @@ import (
 	"time"
 )
 
+// ExecResult holds information about the program after execution.
 type ExecResult struct {
 	State    *os.ProcessState
 	WallTime time.Duration
@@ -24,10 +25,11 @@ func Exec(program string, args ...string) (stdout string, stderr string, result 
 	err = cmd.Run()
 	elapsed := time.Since(start)
 	if err != nil {
-		if _, ok := err.(*exec.ExitError); !ok {
-			return
-		} else {
+		_, ok := err.(*exec.ExitError)
+		if ok {
 			err = nil
+		} else {
+			return
 		}
 	}
 	result.State = cmd.ProcessState

@@ -46,7 +46,7 @@ const (
 	// NoError means that no error has been returned by the box runner
 	NoError BoxError = iota
 
-	// RunTimeError means that an error was rised at run time. Probably non-zero status.
+	// RunTimeError means that an error was raised at run time. Probably non-zero status.
 	RunTimeError = iota
 
 	// KilledBySignal means that the program was killed after getting a signal.

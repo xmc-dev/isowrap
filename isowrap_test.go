@@ -43,10 +43,13 @@ func copyTest(testProgram string, b *Box, t *testing.T) {
 	to := filepath.Join(b.Path, "testProgram")
 	data, err := ioutil.ReadFile(from)
 	if err != nil {
-		t.Fatal("Couldn't copy test program '" + testProgram + "'")
+		t.Fatal("Couldn't read test program '" + testProgram + "'")
 	}
 
 	err = ioutil.WriteFile(to, data, 0777)
+	if err != nil {
+		t.Fatal("Couldn't write test program '" + testProgram + "' to its final destination")
+	}
 }
 
 func compileTestData() error {
