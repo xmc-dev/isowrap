@@ -50,6 +50,7 @@ func copyTest(testProgram string, b *Box, t *testing.T) {
 }
 
 func compileTestData() error {
+	_ = os.Mkdir("test_data", os.ModePerm)
 	wd, err := os.Getwd()
 	if err != nil {
 		return err
