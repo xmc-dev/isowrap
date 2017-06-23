@@ -1,6 +1,6 @@
 # Isowrap
 
-[![Build Status](https://travis-ci.org/tudurom/isowrap.svg?branch=master)](https://travis-ci.org/tudurom/isowrap)
+[![Build Status](https://travis-ci.org/tudurom/isowrap.svg?branch=master)](https://travis-ci.org/tudurom/isowrap) [![Coverage Status](https://coveralls.io/repos/github/tudurom/isowrap/badge.svg)](https://coveralls.io/github/tudurom/isowrap)
 
 Isowrap is a library used to execute programs isolated from the rest of the system.
 
