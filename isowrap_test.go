@@ -5,6 +5,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -86,8 +87,8 @@ func compileTestData() error {
 	return err
 }
 
-func runTest(b *Box, t *testing.T) RunResult {
-	result, err := b.Run("testProgram")
+func runTest(b *Box, t *testing.T, args ...string) RunResult {
+	result, err := b.Run("testProgram", args...)
 	t.Logf("Result: %+v", result)
 	if err != nil {
 		t.Fatal("Couldn't run test program: ", err)
@@ -111,21 +112,21 @@ func TestInitAndCleanupBox(t *testing.T) {
 
 func TestSuccessfulRunNoLimits(t *testing.T) {
 	b := initBox(0, BoxConfig{}, t)
-	copyTest("success_no_limits", b, t)
+	copyTest("no_limits", b, t)
 
-	runTest(b, t)
+	runTest(b, t, "0")
 	cleanupBox(b, t)
 }
 
 func TestFailRunNoLimits(t *testing.T) {
 	b := initBox(0, BoxConfig{}, t)
-	copyTest("fail_no_limits", b, t)
+	copyTest("no_limits", b, t)
 
-	result := runTest(b, t)
+	result := runTest(b, t, "1")
 	cleanupBox(b, t)
 
-	if result.ExitCode == 0 {
-		t.Fatal("Program probably ran successfully")
+	if result.ExitCode != 1 {
+		t.Fatal("Exit code not 1")
 	}
 }
 
@@ -203,5 +204,19 @@ func TestEnvValue(t *testing.T) {
 	}
 	if strings.TrimSpace(result.Stdout) != "test321" {
 		t.Error("Program returned the wrong value for the given environment variable")
+	}
+}
+
+func TestFailProcLimit(t *testing.T) {
+	cfg := BoxConfig{}
+	cfg.MaxProc = 3
+	b := initBox(0, cfg, t)
+	copyTest("proc_limit", b, t)
+
+	result := runTest(b, t, strconv.FormatUint(uint64(cfg.MaxProc+1), 10))
+	cleanupBox(b, t)
+
+	if result.ErrorType != RunTimeError {
+		t.Error("Program didn't get runtime error")
 	}
 }
