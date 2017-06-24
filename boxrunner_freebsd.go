@@ -89,11 +89,7 @@ func (br *BoxRunner) Run(command string, args ...string) (result RunResult, err 
 	cmd := exec.Command("jexec", params...)
 	cmd.Stdout = &bout
 	cmd.Stderr = &berr
-	if br.B.Config.FullEnv {
-		copy(cmd.Env, os.Environ())
-	} else {
-		cmd.Env = []string{}
-	}
+	cmd.Env = []string{}
 	for _, e := range br.B.Config.Env {
 		// If no value given, inherit environment variable from the system
 		if e.Value == "" {

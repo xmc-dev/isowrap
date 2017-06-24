@@ -31,7 +31,6 @@ type BoxConfig struct {
 	StackLimit   uint
 	MaxProc      uint
 	ShareNetwork bool
-	FullEnv      bool
 	Env          []EnvPair
 }
 
@@ -61,20 +60,21 @@ const (
 )
 
 func (be BoxError) String() string {
+	var s string
 	switch be {
 	case NoError:
-		return "NoError"
+		s = "NoError"
 	case RunTimeError:
-		return "RunTimeError"
+		s = "RunTimeError"
 	case KilledBySignal:
-		return "KilledBySignal"
+		s = "KilledBySignal"
 	case Timeout:
-		return "Timeout"
+		s = "Timeout"
 	case InternalError:
-		return "InternalError"
-	default:
-		return ""
+		s = "InternalError"
 	}
+
+	return s
 }
 
 // Box represents an isolated environment

@@ -14,17 +14,18 @@ import (
 const testSrcDir = "test_src"
 const testDataDir = "test_data"
 
-func initBox(id uint, cfg BoxConfig, t *testing.T) *Box {
+func newBox(id uint) *Box {
 	b := NewBox()
 	b.ID = id
-	b.Config = cfg
-	err := b.Init()
 
+	return b
+}
+
+func initBox(b *Box, t *testing.T) {
+	err := b.Init()
 	if err != nil {
 		t.Fatal("Couldn't initialize box: ", err)
 	}
-
-	return b
 }
 
 func cleanupBox(b *Box, t *testing.T) {
@@ -33,6 +34,16 @@ func cleanupBox(b *Box, t *testing.T) {
 	if err != nil {
 		t.Fatal("Couldn't cleanup box: ", err)
 	}
+}
+
+func runTest(b *Box, t *testing.T, args ...string) RunResult {
+
+	result, err := b.Run("testProgram", args...)
+	t.Logf("Result: %+v", result)
+	if err != nil {
+		t.Fatal("Couldn't run test program: ", err)
+	}
+	return result
 }
 
 func copyTest(testProgram string, b *Box, t *testing.T) {
@@ -87,15 +98,6 @@ func compileTestData() error {
 	return err
 }
 
-func runTest(b *Box, t *testing.T, args ...string) RunResult {
-	result, err := b.Run("testProgram", args...)
-	t.Logf("Result: %+v", result)
-	if err != nil {
-		t.Fatal("Couldn't run test program: ", err)
-	}
-	return result
-}
-
 func TestMain(m *testing.M) {
 	log.Println("Compiling test programs")
 	err := compileTestData()
@@ -106,12 +108,14 @@ func TestMain(m *testing.M) {
 }
 
 func TestInitAndCleanupBox(t *testing.T) {
-	b := initBox(42, BoxConfig{}, t)
+	b := newBox(42)
+	initBox(b, t)
 	cleanupBox(b, t)
 }
 
 func TestSuccessfulRunNoLimits(t *testing.T) {
-	b := initBox(0, BoxConfig{}, t)
+	b := newBox(0)
+	initBox(b, t)
 	copyTest("no_limits", b, t)
 
 	runTest(b, t, "0")
@@ -119,7 +123,8 @@ func TestSuccessfulRunNoLimits(t *testing.T) {
 }
 
 func TestFailRunNoLimits(t *testing.T) {
-	b := initBox(0, BoxConfig{}, t)
+	b := newBox(0)
+	initBox(b, t)
 	copyTest("no_limits", b, t)
 
 	result := runTest(b, t, "1")
@@ -131,9 +136,9 @@ func TestFailRunNoLimits(t *testing.T) {
 }
 
 func TestFailTimeLimit(t *testing.T) {
-	cfg := BoxConfig{}
-	cfg.WallTime = time.Duration(0.3 * float64(time.Second))
-	b := initBox(0, cfg, t)
+	b := newBox(0)
+	b.Config.WallTime = time.Duration(0.3 * float64(time.Second))
+	initBox(b, t)
 	copyTest("fail_time_limit", b, t)
 
 	result := runTest(b, t)
@@ -145,8 +150,8 @@ func TestFailTimeLimit(t *testing.T) {
 }
 
 func TestFailSigsegv(t *testing.T) {
-	cfg := BoxConfig{}
-	b := initBox(0, cfg, t)
+	b := newBox(0)
+	initBox(b, t)
 	copyTest("fail_sigsegv", b, t)
 
 	result := runTest(b, t)
@@ -157,26 +162,11 @@ func TestFailSigsegv(t *testing.T) {
 	}
 }
 
-func TestEnvFull(t *testing.T) {
-	cfg := BoxConfig{}
-	cfg.FullEnv = true
-	b := initBox(0, cfg, t)
-	copyTest("env_test", b, t)
-
-	result := runTest(b, t)
-	if result.ErrorType != NoError {
-		t.Error("Program failed")
-	}
-	if strings.TrimSpace(result.Stdout) != os.Getenv("HOME") {
-		t.Error("Program returned the wrong value for the given environment variable")
-	}
-}
-
 func TestEnvInherit(t *testing.T) {
-	cfg := BoxConfig{}
 	os.Setenv("ISOWRAP_SPECIAL_VAL", "test432")
-	cfg.Env = append(cfg.Env, EnvPair{"ISOWRAP_SPECIAL_VAL", ""})
-	b := initBox(0, cfg, t)
+	b := newBox(0)
+	b.Config.Env = append(b.Config.Env, EnvPair{"ISOWRAP_SPECIAL_VAL", ""})
+	initBox(b, t)
 	copyTest("env_val", b, t)
 
 	result := runTest(b, t)
@@ -191,9 +181,9 @@ func TestEnvInherit(t *testing.T) {
 }
 
 func TestEnvValue(t *testing.T) {
-	cfg := BoxConfig{}
-	cfg.Env = append(cfg.Env, EnvPair{"ISOWRAP_SPECIAL_VAL", "test321"})
-	b := initBox(0, cfg, t)
+	b := newBox(0)
+	b.Config.Env = append(b.Config.Env, EnvPair{"ISOWRAP_SPECIAL_VAL", "test321"})
+	initBox(b, t)
 	copyTest("env_val", b, t)
 
 	result := runTest(b, t)
@@ -208,12 +198,12 @@ func TestEnvValue(t *testing.T) {
 }
 
 func TestFailProcLimit(t *testing.T) {
-	cfg := BoxConfig{}
-	cfg.MaxProc = 3
-	b := initBox(0, cfg, t)
+	b := newBox(0)
+	b.Config.MaxProc = 3
+	initBox(b, t)
 	copyTest("proc_limit", b, t)
 
-	result := runTest(b, t, strconv.FormatUint(uint64(cfg.MaxProc+1), 10))
+	result := runTest(b, t, strconv.FormatUint(uint64(b.Config.MaxProc+1), 10))
 	cleanupBox(b, t)
 
 	if result.ErrorType != RunTimeError {
