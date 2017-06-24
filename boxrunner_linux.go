@@ -83,7 +83,7 @@ func (br *BoxRunner) Run(command string, args ...string) (result RunResult, err 
 	}
 
 	params := []string{}
-	params = append(params, "--silent", "-M"+metaFile.Name())
+	params = append(params, "--silent", "-M", metaFile.Name())
 
 	ap := func(p string, i uint) {
 		if i > 0 {
