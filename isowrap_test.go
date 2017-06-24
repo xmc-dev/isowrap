@@ -199,14 +199,28 @@ func TestEnvValue(t *testing.T) {
 
 func TestFailProcLimit(t *testing.T) {
 	b := newBox(0)
-	b.Config.MaxProc = 3
+	b.Config.MaxProc = 5
 	initBox(b, t)
 	copyTest("proc_limit", b, t)
 
-	result := runTest(b, t, strconv.FormatUint(uint64(b.Config.MaxProc+1), 10))
+	result := runTest(b, t, strconv.FormatUint(uint64(b.Config.MaxProc), 10))
 	cleanupBox(b, t)
 
 	if result.ErrorType != RunTimeError {
 		t.Error("Program didn't get runtime error")
+	}
+}
+
+func TestSuccessProcLimit(t *testing.T) {
+	b := newBox(0)
+	b.Config.MaxProc = 5
+	initBox(b, t)
+	copyTest("proc_limit", b, t)
+
+	result := runTest(b, t, strconv.FormatUint(uint64(b.Config.MaxProc-1), 10))
+	cleanupBox(b, t)
+
+	if result.ErrorType != NoError {
+		t.Error("Program got an error")
 	}
 }
