@@ -62,7 +62,7 @@ func (br *BoxRunner) Init() error {
 		cl(fmt.Sprintf("stacksize:sigsegv=%dK", br.B.Config.MemoryLimit))
 	}
 	if br.B.Config.MaxProc > 0 {
-		cl(fmt.Sprintf("maxproc:sigsegv=%d", br.B.Config.MaxProc))
+		cl(fmt.Sprintf("maxproc:deny=%d", br.B.Config.MaxProc))
 	}
 	if err != nil {
 		return err
