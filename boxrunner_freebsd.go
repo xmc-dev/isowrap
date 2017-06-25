@@ -169,6 +169,7 @@ func (br *BoxRunner) Run(command string, args ...string) (result RunResult, err 
 		if ws.Signaled() {
 			result.ExitCode = 128 + int(ws.Signal())
 			result.ErrorType = KilledBySignal
+			result.Signal = syscall.Signal(ws.Signal())
 		}
 		result.CPUTime = state.SystemTime() + state.UserTime()
 		result.MemUsed = uint(us.Maxrss)

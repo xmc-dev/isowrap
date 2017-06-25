@@ -1,6 +1,9 @@
 package isowrap
 
-import "time"
+import (
+	"os"
+	"time"
+)
 
 // EnvPair represents an environment variable made of a key and a value.
 type EnvPair struct {
@@ -20,6 +23,7 @@ type RunResult struct {
 	CPUTime   time.Duration
 	WallTime  time.Duration
 	MemUsed   uint
+	Signal    os.Signal
 	ErrorType BoxError
 }
 

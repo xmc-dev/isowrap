@@ -8,6 +8,7 @@ import (
 	"os/exec"
 	"strconv"
 	"strings"
+	"syscall"
 	"time"
 )
 
@@ -136,6 +137,8 @@ func (br *BoxRunner) Run(command string, args ...string) (result RunResult, err 
 	wallTime, _ := strconv.ParseFloat(meta["time-wall"], 64)
 	result.CPUTime = time.Duration(cpuTime * float64(time.Second))
 	result.WallTime = time.Duration(wallTime * float64(time.Second))
+	result.Signal = syscall.Signal(0)
+	result.ExitCode, _ = strconv.Atoi(meta["exitcode"])
 
 	memused, _ := strconv.ParseUint(meta["cg-mem"], 10, 64)
 	result.MemUsed = uint(memused)
@@ -147,6 +150,9 @@ func (br *BoxRunner) Run(command string, args ...string) (result RunResult, err 
 		result.ErrorType = BoxError(RunTimeError)
 	case "SG":
 		result.ErrorType = BoxError(KilledBySignal)
+		signal, _ := strconv.Atoi(meta["exitsig"])
+		result.Signal = syscall.Signal(signal)
+		result.ExitCode = 128 + signal
 	case "TO":
 		result.ErrorType = BoxError(Timeout)
 	case "XX":
@@ -155,7 +161,6 @@ func (br *BoxRunner) Run(command string, args ...string) (result RunResult, err 
 	default:
 		return RunResult{}, errors.New("Unknown run status " + meta["status"])
 	}
-	result.ExitCode, _ = strconv.Atoi(meta["exitcode"])
 
 	return
 }

@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"syscall"
 	"testing"
 	"time"
 )
@@ -157,7 +158,7 @@ func TestFailSigsegv(t *testing.T) {
 	result := runTest(b, t)
 	cleanupBox(b, t)
 
-	if result.ErrorType != KilledBySignal {
+	if result.ErrorType != KilledBySignal && result.Signal != syscall.SIGSEGV {
 		t.Error("Program didn't exit because of runtime error")
 	}
 }
