@@ -1,6 +1,8 @@
 # Isowrap
 
-[![Build Status](https://travis-ci.org/xmc-dev/isowrap.svg?branch=master)](https://travis-ci.org/xmc-dev/isowrap) [![Coverage Status](https://coveralls.io/repos/github/xmc-dev/isowrap/badge.svg)](https://coveralls.io/github/xmc-dev/isowrap)
+[![Build Status](https://travis-ci.org/xmc-dev/isowrap.svg?branch=master)](https://travis-ci.org/xmc-dev/isowrap)
+[![Coverage Status](https://coveralls.io/repos/github/xmc-dev/isowrap/badge.svg)](https://coveralls.io/github/xmc-dev/isowrap)
+[![GoDoc](https://godoc.org/github.com/xmc-dev/isowrap?status.svg)](https://godoc.org/github.com/xmc-dev/isowrap)
 
 Isowrap is a library used to execute programs isolated from the rest of the system.
 
