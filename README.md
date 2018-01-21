@@ -15,6 +15,7 @@ This is probably alpha quality software.
 - [x] Linux isolate runner
   - [x] Full env
 - [x] FreeBSD jail runner
+  - [ ] DOES NOT COMPILE - breaking changes
   - [x] Implement "proper" wall time limit.
   - [x] Stack limit
   - [x] Maximum number of processes

@@ -1,7 +1,7 @@
 package isowrap
 
 import (
-	"bytes"
+	"io"
 	"os"
 	"os/exec"
 	"time"
@@ -14,28 +14,19 @@ type ExecResult struct {
 }
 
 // Exec executes a command and returns its stdout, stderr and exit status
-func Exec(program string, args ...string) (stdout string, stderr string, result ExecResult, err error) {
-	var bout, berr bytes.Buffer
+func Exec(stdin io.Reader, stdout, stderr io.Writer, program string, args ...string) (result ExecResult, err error) {
 	cmd := exec.Command(program, args...)
-	cmd.Stdout = &bout
-	cmd.Stderr = &berr
+	cmd.Stdout = stdout
+	cmd.Stderr = stderr
 
 	start := time.Now()
 
 	err = cmd.Run()
 	elapsed := time.Since(start)
 	if err != nil {
-		_, ok := err.(*exec.ExitError)
-		if ok {
-			err = nil
-		} else {
-			return
-		}
+		return
 	}
 	result.State = cmd.ProcessState
 	result.WallTime = elapsed
-
-	stdout = string(bout.Bytes())
-	stderr = string(berr.Bytes())
 	return
 }

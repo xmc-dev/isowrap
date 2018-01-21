@@ -1,6 +1,8 @@
 package isowrap
 
 import (
+	"bytes"
+	"io"
 	"os"
 	"time"
 )
@@ -16,8 +18,6 @@ type BoxError int
 
 // RunResult represents the result of running the prograim in the box.
 type RunResult struct {
-	Stdout   string
-	Stderr   string
 	ExitCode int
 
 	CPUTime   time.Duration
@@ -41,7 +41,7 @@ type BoxConfig struct {
 // Runner is an interface for various program isolating methods
 type Runner interface {
 	Init() error
-	Run(command string, args ...string) (RunResult, error)
+	Run(stdin io.Reader, stdout, stderr io.Writer, command string, args ...string) (RunResult, error)
 	Cleanup() error
 }
 
@@ -116,8 +116,14 @@ func (b *Box) Init() error {
 }
 
 // Run calls the runner's Run function
-func (b *Box) Run(command string, args ...string) (RunResult, error) {
-	return b.runner.Run(command, args...)
+func (b *Box) Run(stdin io.Reader, stdout, stderr io.Writer, command string, args ...string) (RunResult, error) {
+	return b.runner.Run(stdin, stdout, stderr, command, args...)
+}
+
+func (b *Box) RunOutput(command string, args ...string) (string, string, RunResult, error) {
+	var stdout, stderr bytes.Buffer
+	result, err := b.Run(os.Stdin, &stdout, &stderr, command, args...)
+	return stdout.String(), stderr.String(), result, err
 }
 
 // Cleanup calls the runner's Cleanup function.

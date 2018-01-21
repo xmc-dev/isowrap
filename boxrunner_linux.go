@@ -2,7 +2,10 @@ package isowrap
 
 import (
 	"bufio"
+	"bytes"
 	"errors"
+	"fmt"
+	"io"
 	"io/ioutil"
 	"os"
 	"os/exec"
@@ -58,17 +61,19 @@ func (br *BoxRunner) Init() error {
 		"--box-id="+strconv.Itoa(int(br.B.ID)),
 		"--init",
 	)
-	stdout, _, _, err := Exec("isolate", params...)
+	var outBuf, outErr bytes.Buffer
+	_, err := Exec(os.Stdin, &outBuf, &outErr, "isolate", params...)
 	if err != nil {
+		fmt.Println("!!! ", outErr.String())
 		return err
 	}
 
-	br.B.Path = strings.TrimSpace(string(stdout)) + "/box"
+	br.B.Path = strings.TrimSpace(outBuf.String()) + "/box"
 	return nil
 }
 
 // Run runs the specified command inside the isolated box
-func (br *BoxRunner) Run(command string, args ...string) (result RunResult, err error) {
+func (br *BoxRunner) Run(stdin io.Reader, stdout, stderr io.Writer, command string, args ...string) (result RunResult, err error) {
 	itoa := func(i uint) string {
 		return strconv.Itoa(int(i))
 	}
@@ -123,9 +128,7 @@ func (br *BoxRunner) Run(command string, args ...string) (result RunResult, err 
 
 	params = append(params, "--cg", "--run", "--", command)
 	params = append(params, args...)
-	stdout, stderr, _, err := Exec("isolate", params...)
-	result.Stdout = stdout
-	result.Stderr = stderr
+	_, err = Exec(stdin, stdout, stderr, "isolate", params...)
 	meta, err := parseMetaFile(metaFileName)
 	if err != nil {
 		return
@@ -167,7 +170,7 @@ func (br *BoxRunner) Run(command string, args ...string) (result RunResult, err 
 
 // Cleanup cleans up the isolate box
 func (br *BoxRunner) Cleanup() error {
-	_, err := exec.Command("isolate", "--cg", "--box-id="+strconv.Itoa(int(br.B.ID)), "--cleanup").Output()
+	err := exec.Command("isolate", "--cg", "--box-id="+strconv.Itoa(int(br.B.ID)), "--cleanup").Run()
 	if err != nil {
 		return err
 	}
