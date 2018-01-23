@@ -8,7 +8,7 @@ before_install:
     - sudo apt-get -qq update
     - sudo apt-get install -y asciidoc libcap-dev
     - git clone https://github.com/ioi/isolate
-    - pushd isolate && make && sudo make install && popd
+    - pushd isolate && git reset --hard e770b0a26fc8cbce04b1c7195842af5578c9388a && make && sudo make install && popd
     - go get -u golang.org/x/tools/cmd/cover
     - go get -u github.com/mattn/goveralls
 
