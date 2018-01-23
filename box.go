@@ -61,6 +61,9 @@ const (
 
 	// InternalError means that the Runner encountered an error.
 	InternalError = iota
+
+	// MemoryExceeded means that the process tried to use more memory than provided
+	MemoryExceeded = iota
 )
 
 func (be BoxError) String() string {
@@ -76,6 +79,8 @@ func (be BoxError) String() string {
 		s = "Timeout"
 	case InternalError:
 		s = "InternalError"
+	case MemoryExceeded:
+		s = "MemoryExceeded"
 	}
 
 	return s

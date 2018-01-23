@@ -107,6 +107,7 @@ func (br *BoxRunner) Run(stdin io.Reader, stdout, stderr io.Writer, command stri
 	apf("--time", br.B.Config.CPUTime.Seconds())
 	apf("--wall-time", br.B.Config.WallTime.Seconds())
 	ap("--stack", br.B.Config.StackLimit)
+	ap("--cg-mem", br.B.Config.MemoryLimit)
 
 	if br.B.Config.MaxProc == 0 {
 		params = append(params, "-p")
@@ -156,6 +157,9 @@ func (br *BoxRunner) Run(stdin io.Reader, stdout, stderr io.Writer, command stri
 		signal, _ := strconv.Atoi(meta["exitsig"])
 		result.Signal = syscall.Signal(signal)
 		result.ExitCode = 128 + signal
+		if signal == 9 && result.MemUsed >= br.B.Config.MemoryLimit {
+			result.ErrorType = BoxError(MemoryExceeded)
+		}
 	case "TO":
 		result.ErrorType = BoxError(Timeout)
 	case "XX":

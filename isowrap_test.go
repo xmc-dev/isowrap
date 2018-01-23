@@ -118,8 +118,12 @@ func TestSuccessfulRunNoLimits(t *testing.T) {
 	initBox(b, t)
 	copyTest("no_limits", b, t)
 
-	runTest(b, t, "0")
+	_, _, result := runTest(b, t, "0")
 	cleanupBox(b, t)
+
+	if result.ErrorType != NoError {
+		t.Fatal("Unexpected error: ", result.ErrorType)
+	}
 }
 
 func TestFailRunNoLimits(t *testing.T) {
@@ -129,6 +133,10 @@ func TestFailRunNoLimits(t *testing.T) {
 
 	_, _, result := runTest(b, t, "1")
 	cleanupBox(b, t)
+
+	if result.ErrorType != RunTimeError {
+		t.Fatal("Unexpected error: ", result.ErrorType)
+	}
 
 	if result.ExitCode != 1 {
 		t.Fatal("Exit code not 1")
@@ -222,5 +230,20 @@ func TestSuccessProcLimit(t *testing.T) {
 
 	if result.ErrorType != NoError {
 		t.Error("Program got an error")
+	}
+}
+
+func TestFailMemoryLimit(t *testing.T) {
+	b := newBox(0)
+	b.Config.MemoryLimit = 2 * 1024
+	b.Config.WallTime = 2 * time.Second
+	initBox(b, t)
+	copyTest("memory_limit", b, t)
+
+	_, _, result := runTest(b, t)
+	cleanupBox(b, t)
+
+	if result.ErrorType != MemoryExceeded {
+		t.Error("Program did not exceed memory")
 	}
 }
